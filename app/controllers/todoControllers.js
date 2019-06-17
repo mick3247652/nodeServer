@@ -1,56 +1,58 @@
-import db from '../db'
+import { Database } from "../db";
+import {ObjectID} from 'mongodb'
 
 class TodosController {
-    getAllTodos(req, res) {
-      return res.status(200).send({
-        success: 'true',
-        message: 'todos retrieved successfully',
-        todos: db,
-      });
-    }
+  getAllTodos(req, res) {
+    Database.database.collection("todos").find({}, (err, result) => {
+      const todos = result.toArray()
+      console.log(todos);
+      if (err) {
+        return res.status(404).send({ error: "An error has occurred" });
+      } else {
+        return res.status(200).send(todos);
+      }
+    });
+  }
   
     getTodo(req, res) {
-      const id = parseInt(req.params.id, 10);
-      db.map((todo) => {
-        if (todo.id === id) {
-          return res.status(200).send({
-            success: 'true',
-            message: 'todo retrieved successfully',
-            todo,
-          });
+      //const id = parseInt(req.params.id, 10);
+      const details = { '_id': new ObjectID(req.params.id) };
+      console.log(details)
+      Database.database.collection('todos').findOne(details, (err, item) => {
+        if (err) {
+          return res.status(404).send({'error':'An error has occurred'});
+        } else {
+          console.log(item)
+          return res.status(200).send(item);
         }
       });
-      return res.status(404).send({
-        success: 'false',
-        message: 'todo does not exist',
-      });
     }
   
-    createTodo(req, res) {
-      if (!req.body.title) {
-        return res.status(400).send({
-          success: 'false',
-          message: 'title is required',
-        });
-      } else if (!req.body.description) {
-        return res.status(400).send({
-          success: 'false',
-          message: 'description is required',
-        });
+  createTodo(req, res) {
+    if (!req.body.title) {
+      return res.status(400).send({
+        success: "false",
+        message: "title is required"
+      });
+    } else if (!req.body.description) {
+      return res.status(400).send({
+        success: "false",
+        message: "description is required"
+      });
+    }
+    const todo = {
+      title: req.body.title,
+      description: req.body.description
+    };
+    Database.database.collection("todos").insertOne(todo, (err, result) => {
+      if (err) {
+        res.send({ error: "An error has occurred" });
+      } else {
+        res.send(result.ops[0]);
       }
-      const todo = {
-        id: db.length + 1,
-        title: req.body.title,
-        description: req.body.description,
-      };
-      db.push(todo);
-      return res.status(201).send({
-        success: 'true',
-        message: 'todo added successfully',
-        todo,
-      });
-    }
-  
+    });
+  }
+  /*
     updateTodo(req, res) {
       const id = parseInt(req.params.id, 10);
       let todoFound;
@@ -119,8 +121,8 @@ class TodosController {
         success: 'true',
         message: 'Todo deleted successfuly',
       });
-    }
-  }
-  
-  const todoController = new TodosController();
-  export default todoController;
+    }*/
+}
+
+const todoController = new TodosController();
+export default todoController;
